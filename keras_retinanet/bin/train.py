@@ -169,10 +169,19 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     if args.snapshots:
         # ensure directory created first; otherwise h5py will error after epoch.
         makedirs(args.snapshot_path)
+
+        def path_leaf(path):
+            import ntpath
+            head, tail = ntpath.split(path)
+            leaf = tail or ntpath.basename(head)
+            leafWithoutExtension = leaf.split('.')[0].split(' ')
+            leafWithoutExtension = leafWithoutExtension[0] + leafWithoutExtension[1]
+            return leafWithoutExtension
+
         checkpoint = keras.callbacks.ModelCheckpoint(
             os.path.join(
                 args.snapshot_path,
-                '{backbone}_{dataset_type}_latest.h5'.format(backbone=args.backbone, dataset_type=args.dataset_type)
+                '{backbone}_{dataset_type}_{annotationName}.h5'.format(backbone=args.backbone, dataset_type=args.dataset_type, annotationName=str(path_leaf(args.annotations)))
             ),
             verbose=1,
             # save_best_only=True,
