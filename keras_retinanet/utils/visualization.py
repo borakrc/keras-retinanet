@@ -43,7 +43,7 @@ def draw_caption(image, box, caption):
     """
     b = np.array(box).astype(int)
     # cv2.putText(image, caption, (b[0], b[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 2, cv2.LINE_AA)
-    cv2.putText(image, caption, (b[0], b[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(image, caption, (b[0], b[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
 
 
 def draw_boxes(image, boxes, color, thickness=2):
