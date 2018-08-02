@@ -162,6 +162,10 @@ def run(generator, args):
         generator: The generator to debug.
         args: parseargs args object.
     """
+    import time
+    imageCount = 0
+    timeCount = 0
+    start = time.time()
     # display images, one at a time
     for i in range(generator.size()):
         # load the data
@@ -195,9 +199,17 @@ def run(generator, args):
             # result is that annotations without anchors are red, with anchors are green
             draw_boxes(image, boxes_batch[0, anchor_states == 1, :], (0, 255, 0))
 
+        now = time.time()
+        imageCount += 1
+        timeCount += now - start
+        print("processing time: ", now - start, "\tavg: ", timeCount/imageCount)
+
         cv2.imshow('Image', image)
         if cv2.waitKey() == ord('q'):
             return False
+
+        start = time.time()
+
     return True
 
 
