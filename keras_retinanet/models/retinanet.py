@@ -173,11 +173,12 @@ class AnchorParameters:
 """
 The default anchor parameters.
 """
+scaleFactor=-1.0
 AnchorParameters.default = AnchorParameters(
     sizes   = [32, 64, 128, 256, 512],
-    strides = [8, 16, 32, 64, 128],
+    strides = [x * (2 ** (scaleFactor)) for x in  [8, 16, 32, 64, 128]],
     ratios  = np.array([0.5, 1, 2], keras.backend.floatx()),
-    scales  = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)], keras.backend.floatx()),
+    scales  = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)], keras.backend.floatx()),
 )
 
 

@@ -194,16 +194,17 @@ def anchors_for_shape(
     Returns
         np.array of shape (N, 4) containing the (x1, y1, x2, y2) coordinates for the anchors.
     """
+    scaleFactor=-1.0
     if pyramid_levels is None:
         pyramid_levels = [3, 4, 5, 6, 7]
     if strides is None:
-        strides = [2 ** x for x in pyramid_levels]
+        strides = [2 ** (x + scaleFactor) for x in pyramid_levels]
     if sizes is None:
         sizes = [2 ** (x + 2) for x in pyramid_levels]
     if ratios is None:
         ratios = np.array([0.5, 1, 2])
     if scales is None:
-        scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
+        scales = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)])
 
     if shapes_callback is None:
         shapes_callback = guess_shapes
@@ -213,13 +214,13 @@ def anchors_for_shape(
     all_anchors = np.zeros((0, 4))
     for idx, p in enumerate(pyramid_levels):
         anchors         = generate_anchors(base_size=sizes[idx], ratios=ratios, scales=scales)
-        shifted_anchors = shift(image_shapes[idx], strides[idx], anchors)
+        shifted_anchors = shift(image_shapes[idx], strides[idx], anchors, scaleFactor)
         all_anchors     = np.append(all_anchors, shifted_anchors, axis=0)
 
     return all_anchors
 
 
-def shift(shape, stride, anchors):
+def shift(shape, stride, anchors, scaleFactor):
     """ Produce shifted anchors based on shape of the map and stride size.
 
     Args
@@ -227,8 +228,8 @@ def shift(shape, stride, anchors):
         stride : Stride to shift the anchors with over the shape.
         anchors: The anchors to apply at each location.
     """
-    shift_x = (np.arange(0, shape[1]) + 0.5) * stride
-    shift_y = (np.arange(0, shape[0]) + 0.5) * stride
+    shift_x = (np.arange(0, shape[1]* 2 ** (-scaleFactor))  + 0.5) * stride
+    shift_y = (np.arange(0, shape[0]* 2 ** (-scaleFactor)) + 0.5) * stride
 
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
 
@@ -259,7 +260,8 @@ def generate_anchors(base_size=16, ratios=None, scales=None):
         ratios = np.array([0.5, 1, 2])
 
     if scales is None:
-        scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
+        scaleFactor=-1.0
+        scales = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)])
 
     num_anchors = len(ratios) * len(scales)
 
