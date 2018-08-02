@@ -194,7 +194,7 @@ def anchors_for_shape(
     Returns
         np.array of shape (N, 4) containing the (x1, y1, x2, y2) coordinates for the anchors.
     """
-    scaleFactor=-1.0
+    scaleFactor=-0.0
     if pyramid_levels is None:
         pyramid_levels = [3, 4, 5, 6, 7]
     if strides is None:
@@ -260,7 +260,7 @@ def generate_anchors(base_size=16, ratios=None, scales=None):
         ratios = np.array([0.5, 1, 2])
 
     if scales is None:
-        scaleFactor=-1.0
+        scaleFactor=-0.0
         scales = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)])
 
     num_anchors = len(ratios) * len(scales)

@@ -173,7 +173,7 @@ class AnchorParameters:
 """
 The default anchor parameters.
 """
-scaleFactor=-1.0
+scaleFactor=-0.0
 AnchorParameters.default = AnchorParameters(
     sizes   = [32, 64, 128, 256, 512],
     strides = [x * (2 ** (scaleFactor)) for x in  [8, 16, 32, 64, 128]],
