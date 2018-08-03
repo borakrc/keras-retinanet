@@ -21,7 +21,7 @@ from ..utils.compute_overlap import compute_overlap
 
 
 class AnchorModifier:
-    scaleFactor = -0.5
+    scaleFactor = -0.0
 
 def anchor_targets_bbox(
     anchors,
