@@ -225,6 +225,7 @@ def run(generator, args):
 
         latestNegativeAnchorDetected = imageCount
 
+    cv2.waitKey()
     return True
 
 
