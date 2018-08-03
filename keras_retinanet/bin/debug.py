@@ -163,11 +163,14 @@ def run(generator, args):
         args: parseargs args object.
     """
     import time
-    imageCount = 0
-    timeCount = 0
+    imageCount = -1
+    latestNegativeAnchorDetected = -1
     start = time.time()
     # display images, one at a time
     for i in range(generator.size()):
+        timerStart = time.time()
+        imageCount += 1
+
         # load the data
         image       = generator.load_image(i)
         annotations = generator.load_annotations(i)
@@ -186,6 +189,16 @@ def run(generator, args):
         labels_batch, regression_batch, boxes_batch = generator.compute_anchor_targets(anchors, [image], [annotations], generator.num_classes())
         anchor_states                               = labels_batch[0, :, -1]
 
+        import numpy
+        positive_boxes = boxes_batch[0, anchor_states == 1, :]
+        m3 = numpy.isin(annotations, positive_boxes)
+        allPositiveAnnotation = False if m3.min() == False else True
+        if allPositiveAnnotation:
+            if latestNegativeAnchorDetected == imageCount - 1 or imageCount == 0:
+                print("\nNot found any negative annotations on image id(s): ", end='', flush=True)
+            print((str(imageCount) + ", "), end='', flush=True)
+            continue
+
         # draw anchors on the image
         if args.anchors:
             draw_boxes(image, boxes_batch[0, anchor_states == 1, :], (0, 255, 0), thickness=1)
@@ -197,18 +210,20 @@ def run(generator, args):
 
             # draw regressed anchors in green to override most red annotations
             # result is that annotations without anchors are red, with anchors are green
-            draw_boxes(image, boxes_batch[0, anchor_states == 1, :], (0, 255, 0))
+            draw_boxes(image, positive_boxes, (0, 255, 0), thickness=2)
 
         now = time.time()
-        imageCount += 1
-        timeCount += now - start
-        print("processing time: ", now - start, "\tavg: ", timeCount/imageCount)
+        print("\nFound negative annotation in image id: ",imageCount,"\tprocessing time: ", now - timerStart,'. \tAwaiting action from user on the image window.',end='', flush=True)
+        if latestNegativeAnchorDetected != -1:
+            if cv2.waitKey() == ord('q'):
+                return False
+            cv2.imshow('Image', image)
+            cv2.waitKey(100)
+        elif latestNegativeAnchorDetected == -1:
+            cv2.imshow('Image', image)
+            cv2.waitKey(100)
 
-        cv2.imshow('Image', image)
-        if cv2.waitKey() == ord('q'):
-            return False
-
-        start = time.time()
+        latestNegativeAnchorDetected = imageCount
 
     return True
 
