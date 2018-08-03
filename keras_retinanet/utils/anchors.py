@@ -20,6 +20,9 @@ import keras
 from ..utils.compute_overlap import compute_overlap
 
 
+class AnchorModifier:
+    scaleFactor = -0.5
+
 def anchor_targets_bbox(
     anchors,
     image_group,
@@ -194,7 +197,7 @@ def anchors_for_shape(
     Returns
         np.array of shape (N, 4) containing the (x1, y1, x2, y2) coordinates for the anchors.
     """
-    scaleFactor=-0.0
+    scaleFactor = AnchorModifier.scaleFactor
     if pyramid_levels is None:
         pyramid_levels = [3, 4, 5, 6, 7]
     if strides is None:
@@ -214,13 +217,13 @@ def anchors_for_shape(
     all_anchors = np.zeros((0, 4))
     for idx, p in enumerate(pyramid_levels):
         anchors         = generate_anchors(base_size=sizes[idx], ratios=ratios, scales=scales)
-        shifted_anchors = shift(image_shapes[idx], strides[idx], anchors, scaleFactor)
+        shifted_anchors = shift(image_shapes[idx], strides[idx], anchors)
         all_anchors     = np.append(all_anchors, shifted_anchors, axis=0)
 
     return all_anchors
 
 
-def shift(shape, stride, anchors, scaleFactor):
+def shift(shape, stride, anchors):
     """ Produce shifted anchors based on shape of the map and stride size.
 
     Args
@@ -228,6 +231,7 @@ def shift(shape, stride, anchors, scaleFactor):
         stride : Stride to shift the anchors with over the shape.
         anchors: The anchors to apply at each location.
     """
+    scaleFactor = AnchorModifier.scaleFactor
     shift_x = (np.arange(0, shape[1]* 2 ** (-scaleFactor))  + 0.5) * stride
     shift_y = (np.arange(0, shape[0]* 2 ** (-scaleFactor)) + 0.5) * stride
 
@@ -259,8 +263,8 @@ def generate_anchors(base_size=16, ratios=None, scales=None):
     if ratios is None:
         ratios = np.array([0.5, 1, 2])
 
+    scaleFactor = AnchorModifier.scaleFactor
     if scales is None:
-        scaleFactor=-0.0
         scales = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)])
 
     num_anchors = len(ratios) * len(scales)

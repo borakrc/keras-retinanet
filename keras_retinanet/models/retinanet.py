@@ -173,7 +173,8 @@ class AnchorParameters:
 """
 The default anchor parameters.
 """
-scaleFactor=-0.0
+from keras_retinanet.utils.anchors import AnchorModifier
+scaleFactor = AnchorModifier.scaleFactor
 AnchorParameters.default = AnchorParameters(
     sizes   = [32, 64, 128, 256, 512],
     strides = [x * (2 ** (scaleFactor)) for x in  [8, 16, 32, 64, 128]],

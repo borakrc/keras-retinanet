@@ -44,7 +44,8 @@ class Anchors(keras.layers.Layer):
         elif isinstance(ratios, list):
             self.ratios  = np.array(ratios)
         if scales is None:
-            scaleFactor=-0.0
+            from keras_retinanet.utils.anchors import AnchorModifier
+            scaleFactor = AnchorModifier.scaleFactor
             self.scales  = np.array([2 ** (0+scaleFactor), 2 ** ((1.0+scaleFactor) / 3.0), 2 ** ((2.0+scaleFactor) / 3.0)], keras.backend.floatx()),
         elif isinstance(scales, list):
             self.scales  = np.array(scales)
