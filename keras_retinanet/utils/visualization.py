@@ -42,8 +42,8 @@ def draw_caption(image, box, caption):
         caption : String containing the text to draw.
     """
     b = np.array(box).astype(int)
-    cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2)
-    cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+    # cv2.putText(image, caption, (b[0], b[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(image, caption, (b[0], b[1] - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
 
 
 def draw_boxes(image, boxes, color, thickness=2):
@@ -82,7 +82,7 @@ def draw_detections(image, boxes, scores, labels, color=None, label_to_name=None
         draw_caption(image, boxes[i, :], caption)
 
 
-def draw_annotations(image, annotations, color=(0, 255, 0), label_to_name=None):
+def draw_annotations(image, annotations, color=(0, 255, 0), label_to_name=None, thickness=2):
     """ Draws annotations in an image.
 
     # Arguments
@@ -97,4 +97,4 @@ def draw_annotations(image, annotations, color=(0, 255, 0), label_to_name=None):
         caption = '{}'.format(label_to_name(label) if label_to_name else label)
         draw_caption(image, a, caption)
 
-        draw_box(image, a, color=c)
+        draw_box(image, a, color=c, thickness=thickness)
