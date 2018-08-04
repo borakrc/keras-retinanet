@@ -151,6 +151,7 @@ def parse_args(args):
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
     parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
+    parser.add_argument('--skip-positives', help='Skip images with all positive anchors.', action='store_true', )
 
     return parser.parse_args(args)
 
@@ -162,15 +163,10 @@ def run(generator, args):
         generator: The generator to debug.
         args: parseargs args object.
     """
-    import time
-    imageCount = -1
     latestNegativeAnchorDetected = -1
-    start = time.time()
+
     # display images, one at a time
     for i in range(generator.size()):
-        timerStart = time.time()
-        imageCount += 1
-
         # load the data
         image       = generator.load_image(i)
         annotations = generator.load_annotations(i)
@@ -188,16 +184,16 @@ def run(generator, args):
 
         labels_batch, regression_batch, boxes_batch = generator.compute_anchor_targets(anchors, [image], [annotations], generator.num_classes())
         anchor_states                               = labels_batch[0, :, -1]
-
-        import numpy
         positive_boxes = boxes_batch[0, anchor_states == 1, :]
-        m3 = numpy.isin(annotations, positive_boxes)
-        allPositiveAnnotation = False if m3.min() == False else True
-        if allPositiveAnnotation:
-            if latestNegativeAnchorDetected == imageCount - 1 or imageCount == 0:
-                print("\nNot found any negative annotations on image id(s): ", end='', flush=True)
-            print((str(imageCount) + ", "), end='', flush=True)
-            continue
+
+        if args.skip_positives:
+            import numpy
+            allPositiveAnnotation = numpy.isin(annotations, boxes_batch[0, anchor_states == 1, :]).min() != False
+            if allPositiveAnnotation:
+                if latestNegativeAnchorDetected == i - 1:
+                    print("\nNot found any negative annotations on image id(s): ", end='', flush=True)
+                print((str(i) + ", "), end='', flush=True)
+                continue
 
         # draw anchors on the image
         if args.anchors:
@@ -212,18 +208,34 @@ def run(generator, args):
             # result is that annotations without anchors are red, with anchors are green
             draw_boxes(image, positive_boxes, (0, 255, 0), thickness=2)
 
-        now = time.time()
-        print("\nFound negative annotation in image id: ",imageCount,"\tprocessing time: ", now - timerStart,'. \tAwaiting action from user on the image window.',end='', flush=True)
-        if latestNegativeAnchorDetected != -1:
-            if cv2.waitKey() == ord('q'):
-                return False
-            cv2.imshow('Image', image)
-            cv2.waitKey(100)
-        elif latestNegativeAnchorDetected == -1:
-            cv2.imshow('Image', image)
-            cv2.waitKey(100)
+        if args.skip_positives:
+            if latestNegativeAnchorDetected == -1: # first iteration
+                print("\nFound negative annotation in image id: ", i, end='', flush=True)
+                cv2.imshow('Image', image)
+                cv2.waitKey(100)
+            else: # after first iteration
+                print("\nFound negative annotation in image id: ", i,
+                      '. \tAwaiting action from user on the image window.', end='', flush=True)
+                if cv2.waitKey() == ord('q'):
+                    return False
+                cv2.imshow('Image', image)
+                cv2.waitKey(100)
+        else: # don't skip positives
+            if i == 0: # first iteration
+                print("\nImage id: ", i,
+                      '. \tAwaiting action from user on the image window.', end='', flush=True)
+                cv2.imshow('Image', image)
+                cv2.waitKey(100)
+            else: # after first iteration
+                print("\nImage id: ", i,
+                      '. \tAwaiting action from user on the image window.', end='', flush=True)
+                if cv2.waitKey() == ord('q'):
+                    return False
+                cv2.imshow('Image', image)
+                cv2.waitKey(100)
 
-        latestNegativeAnchorDetected = imageCount
+
+        latestNegativeAnchorDetected = i
 
     cv2.waitKey()
     return True
