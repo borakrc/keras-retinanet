@@ -26,6 +26,8 @@ import keras.preprocessing.image
 import tensorflow as tf
 
 # Allow relative imports when being executed as script.
+from keras_retinanet.callbacks.run_function import RunFunction
+
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
     import keras_retinanet.bin  # noqa: F401
@@ -200,6 +202,22 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         cooldown = 0,
         min_lr   = 0
     ))
+
+    def pushToGit():
+        try:
+            os.chdir('medikal-ml')
+            bashCommand = "git add snapshots/* && git commit -m 'snapshot update' && git push"
+            os.chdir('..')
+
+            import subprocess
+            process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            output, error = process.communicate()
+
+            print ('i push git here')
+        except:
+            print('i no push git')
+
+    callbacks.append(RunFunction(pushToGit))
 
     return callbacks
 
