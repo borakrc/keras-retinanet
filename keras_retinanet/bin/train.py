@@ -213,7 +213,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
 
         import subprocess
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE, cwd='/content/medikal-ml')
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE, cwd='/content/medikal-ml', shell=True)
         output, error = process.communicate()
         os.chdir('..')
         print ('i pushed git here, seconds:', time()-startTime)
