@@ -209,7 +209,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         startTime = time()
         print('i will push git here')
         os.chdir('medikal-ml')
-        bashCommand = 'git add snapshots/* && git commit -m "snapshot-update" && git push && echo pustladim'
+        bashCommand = 'git add snapshots/*; git commit -m "snapshot-update"; git push; echo pustladim'
 
 
         import subprocess
