@@ -208,14 +208,14 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         from time import time
         startTime = time()
         print('i will push git here')
-        # os.chdir('medikal-ml')
-        bashCommand = "cd medikal-ml && git add snapshots/* && git commit -m 'snapshot update' && git push; cd .."
+        os.chdir('medikal-ml')
+        bashCommand = "git add snapshots/* && git commit -m 'snapshot update' && git push"
 
 
         import subprocess
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
-        # os.chdir('..')
+        os.chdir('..')
         print ('i pushed git here, seconds:', time()-startTime)
         # except:
         #     print('i no push git')
