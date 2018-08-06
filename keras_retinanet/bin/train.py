@@ -225,7 +225,7 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   cwd='/content/medikal-ml')
             # p3.wait()
-            print(p3.communicate(), 'i pushed git here, seconds:', time() - startTime)
+            # print(p3.communicate(), 'i pushed git here, seconds:', time() - startTime)
 
         except:
             print('i no push git')
