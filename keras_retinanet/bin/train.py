@@ -205,15 +205,18 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
     def pushToGit():
         try:
-            os.chdir('medikal-ml')
-            bashCommand = "git add snapshots/* && git commit -m 'snapshot update' && git push"
-            os.chdir('..')
+            from time import time
+            startTime = time()
+            print('i will push git here')
+            # os.chdir('medikal-ml')
+            bashCommand = "cd medikal-ml && git add medikal-ml/snapshots/* && git commit -m 'snapshot update' && git push; cd .."
+
 
             import subprocess
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             output, error = process.communicate()
-
-            print ('i push git here')
+            # os.chdir('..')
+            print ('i pushed git here, seconds:', time()-startTime)
         except:
             print('i no push git')
 
