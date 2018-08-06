@@ -211,14 +211,21 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
             import subprocess
 
-            p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, cwd='/content/medikal-ml')
-            p2 = subprocess.Popen(['git', 'commit', '-m', "snapshot-update"], stdin=p1.stdout, stdout=subprocess.PIPE,
+            p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   cwd='/content/medikal-ml')
-            p3 = subprocess.Popen(['git', 'push'], stdin=p2.stdout, stdout=subprocess.PIPE, cwd='/content/medikal-ml')
+            p1.wait()
             print(p1.communicate())
+
+            p2 = subprocess.Popen(['git', 'commit', '-m', "snapshot-update"], stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT,
+                                  cwd='/content/medikal-ml')
+            p2.wait()
             print(p2.communicate())
 
-            print(p3.communicate(), 'i pushed git here, seconds:', time()-startTime)
+            p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                  cwd='/content/medikal-ml')
+            p3.wait()
+            print(p3.communicate(), 'i pushed git here, seconds:', time() - startTime)
 
         except:
             print('i no push git')
