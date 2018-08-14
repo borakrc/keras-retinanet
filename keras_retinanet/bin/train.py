@@ -204,10 +204,15 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
     ))
 
     def pushToGit():
+        changedFolder = False
         try:
             print('i will push git here')
-
             import subprocess
+            cwd = os.getcwd()
+
+            if 'medikal-ml' not in cwd:
+                os.chdir('./medikal-ml')
+                changedFolder = True
 
             p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p1.wait()
@@ -221,9 +226,13 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
             p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p3.wait()
             print(p3.communicate(), 'i pushed git here')
+            os.chdir('..')
 
         except:
             print('i no push git')
+        finally:
+            if changedFolder:
+                os.chdir('..')
 
     def pushToGitAsync():
         from time import time
