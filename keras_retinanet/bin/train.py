@@ -209,19 +209,16 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
             import subprocess
 
-            p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                  cwd='/content/medikal-ml')
+            p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p1.wait()
             print(p1.communicate())
 
             p2 = subprocess.Popen(['git', 'commit', '-m', "snapshot-update"], stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT,
-                                  cwd='/content/medikal-ml')
+                                  stderr=subprocess.STDOUT)
             p2.wait()
             print(p2.communicate())
 
-            p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                  cwd='/content/medikal-ml')
+            p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p3.wait()
             print(p3.communicate(), 'i pushed git here')
 
@@ -238,7 +235,9 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
         print('i pushed git here, seconds:', time() - startTime)
 
-    callbacks.append(RunFunction(pushToGitAsync))
+    import osConfig
+    if osConfig.pcName == 'colab':
+        callbacks.append(RunFunction(pushToGitAsync))
 
     return callbacks
 
