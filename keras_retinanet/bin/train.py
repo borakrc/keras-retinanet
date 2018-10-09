@@ -203,51 +203,6 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         min_lr   = 0
     ))
 
-    def pushToGit():
-        changedFolder = False
-        try:
-            print('i will push git here')
-            import subprocess
-            cwd = os.getcwd()
-
-            if 'medikal-ml' not in cwd:
-                os.chdir('./medikal-ml')
-                changedFolder = True
-
-            p1 = subprocess.Popen(['git', 'add', 'snapshots/*'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            p1.wait()
-            print(p1.communicate())
-
-            p2 = subprocess.Popen(['git', 'commit', '-m', "snapshot-update"], stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
-            p2.wait()
-            print(p2.communicate())
-
-            p3 = subprocess.Popen(['git', 'push'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            p3.wait()
-            print(p3.communicate(), 'i pushed git here')
-            os.chdir('..')
-
-        except:
-            print('i no push git')
-        finally:
-            if changedFolder:
-                os.chdir('..')
-
-    def pushToGitAsync():
-        from time import time
-        startTime = time()
-
-        from threading import Thread
-        thread = Thread(target=pushToGit)
-        thread.start()
-
-        print('i pushed git here, seconds:', time() - startTime)
-
-    import osConfig
-    if osConfig.pcName == 'colab':
-        callbacks.append(RunFunction(pushToGitAsync))
-
     return callbacks
 
 
