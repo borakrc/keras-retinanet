@@ -17,8 +17,8 @@ limitations under the License.
 import keras
 from .. import initializers
 from .. import layers
-
-import numpy as np
+from ..utils.anchors import AnchorParameters
+from . import check_training_model
 
 
 def default_classification_model(
@@ -79,10 +79,11 @@ def default_classification_model(
     return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
 
-def default_regression_model(num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel'):
+def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel'):
     """ Creates the default regression submodel.
 
     Args
+        num_values              : Number of values to regress.
         num_anchors             : Number of anchors to regress for each feature level.
         pyramid_feature_size    : The number of filters to expect from the feature pyramid levels.
         regression_feature_size : The number of filters to use in the layers in the regression submodel.
@@ -115,10 +116,10 @@ def default_regression_model(num_anchors, pyramid_feature_size=256, regression_f
             **options
         )(outputs)
 
-    outputs = keras.layers.Conv2D(num_anchors * 4, name='pyramid_regression', **options)(outputs)
+    outputs = keras.layers.Conv2D(num_anchors * num_values, name='pyramid_regression', **options)(outputs)
     if keras.backend.image_data_format() == 'channels_first':
         outputs = keras.layers.Permute((2, 3, 1), name='pyramid_regression_permute')(outputs)
-    outputs = keras.layers.Reshape((-1, 4), name='pyramid_regression_reshape')(outputs)
+    outputs = keras.layers.Reshape((-1, num_values), name='pyramid_regression_reshape')(outputs)
 
     return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
@@ -146,7 +147,7 @@ def __create_pyramid_features(C2, C3, C4, C5, feature_size=256):
     P4_upsampled = layers.UpsampleLike(name='P4_upsampled')([P4, C3])
     P4           = keras.layers.Conv2D(feature_size, kernel_size=3, strides=1, padding='same', name='P4')(P4)
 
-    # add P5 elementwise to C4
+    # add P4 elementwise to C3
     P3           = keras.layers.Conv2D(feature_size, kernel_size=1, strides=1, padding='same', name='C3_reduced')(C3)
     P3           = keras.layers.Add(name='P3_merged')([P4_upsampled, P3])
     P3_upsampled = layers.UpsampleLike(name='P3_upsampled')([P3, C2])
@@ -167,39 +168,6 @@ def __create_pyramid_features(C2, C3, C4, C5, feature_size=256):
     return [P2, P3, P4, P5, P6, P7]
 
 
-class AnchorParameters:
-    """ The parameteres that define how anchors are generated.
-
-    Args
-        sizes   : List of sizes to use. Each size corresponds to one feature level.
-        strides : List of strides to use. Each stride correspond to one feature level.
-        ratios  : List of ratios to use per location in a feature map.
-        scales  : List of scales to use per location in a feature map.
-    """
-    def __init__(self, sizes, strides, ratios, scales):
-        self.sizes   = sizes
-        self.strides = strides
-        self.ratios  = ratios
-        self.scales  = scales
-
-    def num_anchors(self):
-        return len(self.ratios) * len(self.scales)
-
-
-"""
-The default anchor parameters.
-"""
-from keras_retinanet.utils.anchors import AnchorModifier
-scaleFactor = AnchorModifier.scaleFactor
-pyramid_levels = [2, 3, 4, 5, 6, 7]
-AnchorParameters.default = AnchorParameters(
-    sizes = [2 ** (x + 2 + scaleFactor) for x in pyramid_levels],
-    strides = [2 ** (x + scaleFactor) for x in pyramid_levels],
-    ratios  = np.array([0.5, 1, 2], keras.backend.floatx()),
-    scales  = np.array([2 ** (0), 2 ** ((1.0) / 3.0), 2 ** ((2.0) / 3.0)], keras.backend.floatx()),
-)
-
-
 def default_submodels(num_classes, num_anchors):
     """ Create a list of default submodels used for object detection.
 
@@ -213,7 +181,7 @@ def default_submodels(num_classes, num_anchors):
         A list of tuple, where the first element is the name of the submodel and the second element is the submodel itself.
     """
     return [
-        ('regression', default_regression_model(num_anchors)),
+        ('regression', default_regression_model(4, num_anchors)),
         ('classification', default_classification_model(num_classes, num_anchors))
     ]
 
@@ -277,7 +245,7 @@ def retinanet(
     inputs,
     backbone_layers,
     num_classes,
-    num_anchors             = 9,
+    num_anchors             = None,
     create_pyramid_features = __create_pyramid_features,
     submodels               = None,
     name                    = 'retinanet'
@@ -304,6 +272,10 @@ def retinanet(
         ]
         ```
     """
+
+    if num_anchors is None:
+        num_anchors = AnchorParameters.default.num_anchors()
+
     if submodels is None:
         submodels = default_submodels(num_classes, num_anchors)
 
@@ -320,10 +292,10 @@ def retinanet(
 
 def retinanet_bbox(
     model                 = None,
-    anchor_parameters     = AnchorParameters.default,
     nms                   = True,
     class_specific_filter = True,
     name                  = 'retinanet-bbox',
+    anchor_params         = None,
     **kwargs
 ):
     """ Construct a RetinaNet model on top of a backbone and adds convenience functions to output boxes directly.
@@ -333,10 +305,10 @@ def retinanet_bbox(
 
     Args
         model                 : RetinaNet model to append bbox layers to. If None, it will create a RetinaNet model using **kwargs.
-        anchor_parameters     : Struct containing configuration for anchor generation (sizes, strides, ratios, scales).
         nms                   : Whether to use non-maximum suppression for the filtering step.
         class_specific_filter : Whether to use class specific filtering or filter for the best scoring class only.
         name                  : Name of the model.
+        anchor_params         : Struct containing anchor parameters. If None, default values are used.
         *kwargs               : Additional kwargs to pass to the minimal retinanet model.
 
     Returns
@@ -349,12 +321,20 @@ def retinanet_bbox(
         ]
         ```
     """
+
+    # if no anchor parameters are passed, use default values
+    if anchor_params is None:
+        anchor_params = AnchorParameters.default
+
+    # create RetinaNet model
     if model is None:
-        model = retinanet(num_anchors=anchor_parameters.num_anchors(), **kwargs)
+        model = retinanet(num_anchors=anchor_params.num_anchors(), **kwargs)
+    else:
+        check_training_model(model)
 
     # compute the anchors
     features = [model.get_layer(p_name).output for p_name in ['P2', 'P3', 'P4', 'P5', 'P6', 'P7']]
-    anchors  = __build_anchors(anchor_parameters, features)
+    anchors  = __build_anchors(anchor_params, features)
 
     # we expect the anchors, regression and classification values as first output
     regression     = model.outputs[0]

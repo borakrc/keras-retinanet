@@ -1,3 +1,7 @@
+from __future__ import print_function
+import sys
+
+
 class Backbone(object):
     """ This class stores additional information on backbones.
     """
@@ -59,7 +63,7 @@ def backbone(backbone_name):
     return b(backbone_name)
 
 
-def load_model(filepath, backbone_name='resnet50', convert=False, nms=True, class_specific_filter=True):
+def load_model(filepath, backbone_name='resnet50', convert=False, nms=True, class_specific_filter=True, anchor_params=None):
     """ Loads a retinanet model using the correct custom objects.
 
     # Arguments
@@ -70,6 +74,7 @@ def load_model(filepath, backbone_name='resnet50', convert=False, nms=True, clas
         convert               : Boolean, whether to convert the model to an inference model.
         nms                   : Boolean, whether to add NMS filtering to the converted model. Only valid if convert=True.
         class_specific_filter : Whether to use class specific filtering or filter for the best scoring class only.
+        anchor_params         : Anchor parameters object. If omitted, default values are used. Only valid if convert=True.
 
     # Returns
         A keras.models.Model object.
@@ -83,6 +88,23 @@ def load_model(filepath, backbone_name='resnet50', convert=False, nms=True, clas
     model = keras.models.load_model(filepath, custom_objects=backbone(backbone_name).custom_objects)
     if convert:
         from .retinanet import retinanet_bbox
-        model = retinanet_bbox(model=model, nms=nms, class_specific_filter=class_specific_filter)
+        model = retinanet_bbox(model=model, nms=nms, class_specific_filter=class_specific_filter, anchor_params=anchor_params)
 
     return model
+
+
+def assert_training_model(model):
+    """ Assert that the model is a training model.
+    """
+    assert('regression' in model.output_names), "No 'regression' output found in model (outputs: {}), input is not a training model.".format(model.output_names)
+    assert('classification' in model.output_names), "No 'classification' output found in model (outputs: {}), input is not a training model.".format(model.output_names)
+
+
+def check_training_model(model):
+    """ Check that model is a training model and exit otherwise.
+    """
+    try:
+        assert_training_model(model)
+    except AssertionError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
