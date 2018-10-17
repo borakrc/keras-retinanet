@@ -77,6 +77,9 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image        = generator.preprocess_image(raw_image.copy())
         image, scale = generator.resize_image(image)
 
+        imageName = generator.image_names[i].split("\\")[-1]
+        imageName = "prediction_" + imageName.split(".")[0]
+        
         if keras.backend.image_data_format() == 'channels_first':
             image = image.transpose((2, 0, 1))
 
@@ -105,7 +108,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name)
 
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(imageName)), raw_image)
 
         # copy detections to all_detections
         for label in range(generator.num_classes()):
