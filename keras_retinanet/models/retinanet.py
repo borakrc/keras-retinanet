@@ -18,7 +18,7 @@ import keras
 from .. import initializers
 from .. import layers
 from ..utils.anchors import AnchorParameters
-from . import check_training_model
+from . import assert_training_model
 
 
 def default_classification_model(
@@ -64,7 +64,7 @@ def default_classification_model(
 
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
-        kernel_initializer=keras.initializers.zeros(),
+        kernel_initializer=keras.initializers.normal(mean=0.0, stddev=0.01, seed=None),
         bias_initializer=initializers.PriorProbability(probability=prior_probability),
         name='pyramid_classification',
         **options
@@ -330,7 +330,7 @@ def retinanet_bbox(
     if model is None:
         model = retinanet(num_anchors=anchor_params.num_anchors(), **kwargs)
     else:
-        check_training_model(model)
+        assert_training_model(model)
 
     # compute the anchors
     features = [model.get_layer(p_name).output for p_name in ['P2', 'P3', 'P4', 'P5', 'P6', 'P7']]
@@ -355,7 +355,5 @@ def retinanet_bbox(
         nms_threshold = 0.3
     )([boxes, classification] + other)
 
-    outputs = detections
-
     # construct the model
-    return keras.models.Model(inputs=model.inputs, outputs=outputs, name=name)
+    return keras.models.Model(inputs=model.inputs, outputs=detections, name=name)

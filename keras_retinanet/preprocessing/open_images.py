@@ -324,6 +324,16 @@ class OpenImagesGenerator(Generator):
     def num_classes(self):
         return len(self.id_to_labels)
 
+    def has_label(self, label):
+        """ Return True if label is a known label.
+        """
+        return label in self.id_to_labels
+
+    def has_name(self, name):
+        """ Returns True if name is a known class.
+        """
+        raise NotImplementedError()
+
     def name_to_label(self, name):
         raise NotImplementedError()
 
@@ -360,6 +370,6 @@ class OpenImagesGenerator(Generator):
             annotations['bboxes'][idx, 1] = y1
             annotations['bboxes'][idx, 2] = x2
             annotations['bboxes'][idx, 3] = y2
-            annotations['labels'][idx, 4] = cls_id
+            annotations['labels'][idx] = cls_id
 
         return annotations

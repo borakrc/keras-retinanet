@@ -32,9 +32,10 @@ from ..preprocessing.pascal_voc import PascalVocGenerator
 from ..preprocessing.csv_generator import CSVGenerator
 from ..preprocessing.kitti import KittiGenerator
 from ..preprocessing.open_images import OpenImagesGenerator
+from ..utils.keras_version import check_keras_version
 from ..utils.transform import random_transform_generator
 from ..utils.visualization import draw_annotations, draw_boxes
-from ..utils.anchors import anchors_for_shape
+from ..utils.anchors import anchors_for_shape, compute_gt_annotations
 from ..utils.config import read_config_file, parse_anchor_parameters
 
 
@@ -185,26 +186,14 @@ def run(generator, args, anchor_params):
         # resize the image and annotations
         if args.resize:
             image, image_scale = generator.resize_image(image)
-            annotations[:, :4] *= image_scale
+            annotations['bboxes'] *= image_scale
 
         anchors = anchors_for_shape(image.shape, anchor_params=anchor_params)
-
-        labels_batch, regression_batch, boxes_batch = generator.compute_anchor_targets(anchors, [image], [annotations], generator.num_classes())
-        anchor_states                               = labels_batch[0, :, -1]
-        positive_boxes = boxes_batch[0, anchor_states == 1, :]
-
-        if args.skip_positives:
-            import numpy
-            allPositiveAnnotation = numpy.isin(annotations, boxes_batch[0, anchor_states == 1, :]).min() != False
-            if allPositiveAnnotation:
-                if latestNegativeAnchorDetected == i - 1:
-                    print("\nNot found any negative annotations on image id(s): ", end='', flush=True)
-                print((str(i) + ", "), end='', flush=True)
-                continue
+        positive_indices, _, max_indices = compute_gt_annotations(anchors, annotations['bboxes'])
 
         # draw anchors on the image
         if args.anchors:
-            draw_boxes(image, anchors[anchor_states == 1], (255, 255, 0), thickness=1)
+            draw_boxes(image, anchors[positive_indices], (255, 255, 0), thickness=1)
 
         # draw annotations on the image
         if args.annotations:
@@ -213,38 +202,11 @@ def run(generator, args, anchor_params):
 
             # draw regressed anchors in green to override most red annotations
             # result is that annotations without anchors are red, with anchors are green
-            draw_boxes(image, positive_boxes, (0, 255, 0), thickness=2)
+            draw_boxes(image, annotations['bboxes'][max_indices[positive_indices], :], (0, 255, 0))
 
-        if args.skip_positives:
-            if latestNegativeAnchorDetected == -1: # first iteration
-                print("\nFound negative annotation in image id: ", i, end='', flush=True)
-                cv2.imshow('Image', image)
-                cv2.waitKey(100)
-            else: # after first iteration
-                print("\nFound negative annotation in image id: ", i,
-                      '. \tAwaiting action from user on the image window.', end='', flush=True)
-                if cv2.waitKey() == ord('q'):
-                    return False
-                cv2.imshow('Image', image)
-                cv2.waitKey(100)
-        else: # don't skip positives
-            if i == 0: # first iteration
-                print("\nImage id: ", i,
-                      '. \tAwaiting action from user on the image window.', end='', flush=True)
-                cv2.imshow('Image', image)
-                cv2.waitKey(100)
-            else: # after first iteration
-                print("\nImage id: ", i,
-                      '. \tAwaiting action from user on the image window.', end='', flush=True)
-                if cv2.waitKey() == ord('q'):
-                    return False
-                cv2.imshow('Image', image)
-                cv2.waitKey(100)
-
-
-        latestNegativeAnchorDetected = i
-
-    cv2.waitKey()
+        cv2.imshow('Image', image)
+        if cv2.waitKey() == ord('q'):
+            return False
     return True
 
 
@@ -253,6 +215,9 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
+
+    # make sure keras is the minimum required version
+    check_keras_version()
 
     # create the generator
     generator = create_generator(args)
